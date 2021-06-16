@@ -109,7 +109,7 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
             task.stop();
             console.log('CRON END');
         });
-        res.send({'sid': message.sid, status: 'successful'});
+        res.send({status: 'successful'});
     }
     catch (e){
         res.send( {status: 'failed'});

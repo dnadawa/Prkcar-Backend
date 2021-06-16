@@ -63,7 +63,20 @@ app.post("/sendInit", cors(corsConfig), (req, res) => {
 app.post("/sendSchedule", cors(corsConfig), (req, res) => {
     console.log("Current :"+ new Date());
     console.log("Requested: "+ req.body.time);
-    const time = new Date(req.body.time);
+
+    const current = new Date();
+    const time = new Date(
+        moment()
+            .year(current.getUTCFullYear())
+            .month(current.getMonth())
+            .date(current.getUTCDate())
+            .hour(current.getUTCHours())
+            .minute(current.getUTCMinutes())
+            .add(3, "minutes")
+            .format("yyyy/MM/DD HH:mm")
+    );
+
+    // const time = new Date(req.body.time);
     const id = req.body.id;
     console.log("Processed: "+time);
     console.log("Cron :"+time.getUTCMinutes()+"m and "+time.getUTCHours()+" h");

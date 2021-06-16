@@ -60,58 +60,61 @@ app.post("/sendInit", cors(corsConfig), (req, res) => {
 
 
 app.post("/sendSchedule", cors(corsConfig), (req, res) => {
-    const current = new Date();
-    const time = new Date(
-        moment()
-            .year(current.getUTCFullYear())
-            .month(current.getMonth())
-            .date(current.getUTCDate())
-            .hour(current.getUTCHours())
-            .minute(current.getUTCMinutes())
-            .add(5, "minutes")
-            .format("yyyy/MM/DD HH:mm")
-    );
-    const id = req.body.id;
-    const phone = req.body.phone;
+    try{
+        const current = new Date();
+        const time = new Date(
+            moment()
+                .year(current.getUTCFullYear())
+                .month(current.getMonth())
+                .date(current.getUTCDate())
+                .hour(current.getUTCHours())
+                .minute(current.getUTCMinutes())
+                .add(5, "minutes")
+                .format("yyyy/MM/DD HH:mm")
+        );
+        const id = req.body.id;
+        const phone = req.body.phone;
 
-    console.log(id);
-    console.log(phone);
-    console.log(current);
-    console.log(time);
+        console.log(id);
+        console.log(phone);
+        console.log(current);
 
-    const task = cron.schedule(time.getUTCMinutes()+' '+time.getUTCHours()+' * * *', function () {
-        console.log('CRON STARTED');
-        const docRef = db.collection('parked').doc(id);
-        docRef.get().then(doc=>{
-            const isParked = doc.data().parked;
-            if(isParked){
-                console.log("PARKING");
-                try{
-                    client.messages
-                        .create({
-                            body: 'Your allocated parking time will expired in 15 minutes.',
-                            from: '+15407798532',
-                            to: phone
-                        })
-                        .then((message) => {
-                                console.log(message.sid);
-                                res.send({'sid': message.sid, status: 'successful'});
-                            }
-                        );
+        const task = cron.schedule(time.getUTCMinutes()+' '+time.getUTCHours()+' * * *', function () {
+            console.log('CRON STARTED');
+            const docRef = db.collection('parked').doc(id);
+            docRef.get().then(doc=>{
+                const isParked = doc.data().parked;
+                if(isParked){
+                    console.log("PARKING");
+                    try{
+                        client.messages
+                            .create({
+                                body: 'Your allocated parking time will expired in 15 minutes.',
+                                from: '+15407798532',
+                                to: phone
+                            })
+                            .then((message) => {
+                                    console.log(message.sid);
+                                }
+                            );
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
                 }
-                catch (e) {
-                    console.log(e);
-                    res.send({status: "failed"});
+                else{
+                    console.log("NOT PARKING");
                 }
-            }
-            else{
-                console.log("NOT PARKING");
-                res.send({status: 'successful'});
-            }
+            });
+            task.stop();
+            console.log('CRON END');
         });
-        task.stop();
-        console.log('CRON END');
-    });
+        res.send({'sid': message.sid, status: 'successful'});
+    }
+    catch (e){
+        res.send( {status: 'failed'});
+    }
+
 });
 
 app.get('/', (req, res) => {

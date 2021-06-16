@@ -61,25 +61,12 @@ app.post("/sendInit", cors(corsConfig), (req, res) => {
 
 
 app.post("/sendSchedule", cors(corsConfig), (req, res) => {
-    console.log(req.body.time);
+    console.log("Current :"+ new Date());
+    console.log("Requested: "+ req.body.time);
     const time = new Date(req.body.time);
     const id = req.body.id;
-    console.log(time);
-
-    const sendTime = new Date(
-        moment()
-            .year(time.getUTCFullYear())
-            .month(time.getMonth())
-            .date(time.getUTCDate())
-            .hour(time.getUTCHours())
-            .minute(time.getUTCMinutes())
-            // .add(1, 'days')
-            // .subtract(15, 'minutes')
-            .add(3, 'minutes')
-            .format("yyyy/MM/DD HH:mm")
-        );
-
-    console.log(sendTime);
+    console.log("Processed: "+time);
+    console.log("Cron :"+time.getUTCMinutes()+"m and "+time.getUTCHours()+" h");
 
     const task = cron.schedule(time.getUTCMinutes()+' '+time.getUTCHours()+' * * *', function () {
         console.log('cron run');

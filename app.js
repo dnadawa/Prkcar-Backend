@@ -24,8 +24,11 @@ const corsConfig = {
     preflightContinue: true
 }
 
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require('twilio')(accountSid, authToken);
+
 app.post("/sendInit", cors(corsConfig), (req, res) => {
-    console.log("POST started");
     const phone = req.body.phone;
     const license = req.body.license;
     const endTime = req.body.time;
@@ -35,10 +38,6 @@ app.post("/sendInit", cors(corsConfig), (req, res) => {
     console.log(license);
     console.log(endTime);
     console.log(url);
-
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const client = require('twilio')(accountSid, authToken);
 
     try{
         client.messages
@@ -61,9 +60,6 @@ app.post("/sendInit", cors(corsConfig), (req, res) => {
 
 
 app.post("/sendSchedule", cors(corsConfig), (req, res) => {
-    console.log("Current :"+ new Date());
-    console.log("Requested: "+ req.body.time);
-
     const current = new Date();
     const time = new Date(
         moment()
@@ -72,32 +68,54 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
             .date(current.getUTCDate())
             .hour(current.getUTCHours())
             .minute(current.getUTCMinutes())
-            .add(3, "minutes")
+            .add(5, "minutes")
             .format("yyyy/MM/DD HH:mm")
     );
-
-    // const time = new Date(req.body.time);
     const id = req.body.id;
-    console.log("Processed: "+time);
-    console.log("Cron :"+time.getUTCMinutes()+"m and "+time.getUTCHours()+" h");
+    const phone = req.body.phone;
+
+    console.log(id);
+    console.log(phone);
+    console.log(current);
+    console.log(time);
 
     const task = cron.schedule(time.getUTCMinutes()+' '+time.getUTCHours()+' * * *', function () {
-        console.log('cron run');
+        console.log('CRON STARTED');
         const docRef = db.collection('parked').doc(id);
         docRef.get().then(doc=>{
             const isParked = doc.data().parked;
             if(isParked){
-                ///rest of things
-                console.log("Currently parking");
+                console.log("PARKING");
+                try{
+                    client.messages
+                        .create({
+                            body: 'Your allocated parking time will expired in 15 minutes.',
+                            from: '+15407798532',
+                            to: phone
+                        })
+                        .then((message) => {
+                                console.log(message.sid);
+                                res.send({'sid': message.sid, status: 'successful'});
+                            }
+                        );
+                }
+                catch (e) {
+                    console.log(e);
+                    res.send({status: "failed"});
+                }
+            }
+            else{
+                console.log("NOT PARKING");
+                res.send({status: 'successful'});
             }
         });
         task.stop();
+        console.log('CRON END');
     });
-    res.send();
 });
 
 app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });
 
-app.listen(5000,() => console.log('Server started on port 3000'));
+app.listen(5000,() => console.log('Server started on port 5000'));

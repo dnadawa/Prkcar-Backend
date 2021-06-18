@@ -5,7 +5,8 @@ const cors = require('cors');
 const cron = require('node-cron');
 const moment = require('moment');
 const admin = require('firebase-admin');
-
+const fs = require('fs');
+const https = require('https');
 const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
 dotenv.config();
@@ -121,4 +122,12 @@ app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });
 
-app.listen(5000,() => console.log('Server started on port 5000'));
+// app.listen(5000,() => console.log('Server started on port 5000'));
+
+https.createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+}, app)
+    .listen(5000, function () {
+        console.log('Server started on port 5000')
+    })

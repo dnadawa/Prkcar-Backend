@@ -5,6 +5,8 @@ const cors = require('cors');
 const cron = require('node-cron');
 const moment = require('moment');
 const admin = require('firebase-admin');
+const https = require('https');
+const fs = require('fs');
 
 const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
@@ -121,4 +123,19 @@ app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });
 
-app.listen(5000,() => console.log('Server started on port 5000'));
+// app.listen(5000,() => console.log('Server started on port 5000'));
+
+const privateKey = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/cert.pem', 'utf8');
+const ca = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/chain.pem', 'utf8');
+
+const credentials = {
+    key: privateKey,
+    cert: certificate,
+    ca: ca
+};
+
+https.createServer(credentials, app)
+    .listen(5000, function () {
+        console.log('Server started on port 5000')
+    })

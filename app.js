@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const cron = require('node-cron');
+const schedule = require('node-schedule');
 const moment = require('moment');
 const admin = require('firebase-admin');
 const https = require('https');
@@ -81,7 +81,7 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
         console.log(phone);
         console.log(current);
 
-        const task = cron.schedule(time.getUTCMinutes()+' '+time.getUTCHours()+' * * *', function () {
+        schedule.scheduleJob(time, function () {
             console.log('CRON STARTED');
             const docRef = db.collection('parked').doc(id);
             docRef.get().then(doc=>{
@@ -108,7 +108,6 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
                     console.log("NOT PARKING");
                 }
             });
-            task.stop();
             console.log('CRON END');
         });
         res.send({status: 'successful'});

@@ -15,7 +15,7 @@
     "express": "^4.17.1",
     "firebase-admin": "^9.9.0",
     "moment": "^2.29.1",
-    "node-cron": "^3.0.0",
+    "node-schedule": "^2.0.0",
     "twilio": "^3.63.1"
   }
 }

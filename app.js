@@ -91,7 +91,7 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
                     try{
                         client.messages
                             .create({
-                                body: 'Your allocated parking time will expired in 15 minutes.',
+                                body: 'Your allocated parking time will expire in 15 minutes.',
                                 from: '+15407798532',
                                 to: phone
                             })

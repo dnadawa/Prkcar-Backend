@@ -6,6 +6,7 @@ const schedule = require('node-schedule');
 const moment = require('moment');
 const admin = require('firebase-admin');
 const https = require('https');
+const fs = require('fs');
 
 const app = express();
 app.use(bodyParser.urlencoded({extended: true, limit: '50mb'}));

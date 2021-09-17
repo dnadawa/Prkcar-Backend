@@ -7,10 +7,13 @@ const moment = require('moment');
 const admin = require('firebase-admin');
 const https = require('https');
 const fs = require('fs');
+const sgMail = require('@sendgrid/mail');
+const sharp = require('sharp');
 
 const app = express();
 app.use(bodyParser.urlencoded({extended: true, limit: '50mb'}));
 dotenv.config();
+sgMail.setApiKey(process.env.SENDGRID);
 
 const serviceAccount = require('./serviceAccountKey.json');
 
@@ -115,45 +118,135 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
 });
 
 app.post("/plateRecognize", cors(corsConfig), (request, response) => {
-    let message = {
-        'upload' : request.body.image.toString(),
-        'mmc': true
-    };
 
-    let headers = {
-        "Authorization": "Token "+process.env.PLATERECOGNIZER,
-        'Content-Type': 'application/json',
-    };
+    ///do compression
+    const base64str = request.body.image;
+    let base64Image = base64str.split(';base64,').pop();
+    let img = new Buffer(base64Image, 'base64');
 
-    let options = {
-        host: "api.platerecognizer.com",
-        port: 443,
-        path: "/v1/plate-reader",
-        method: "POST",
-        headers: headers
-    };
+    sharp(img)
+        .resize({ height: 2048 })
+        .toBuffer()
+        .then(async resizedImageBuffer => {
+            let resizedImageData = resizedImageBuffer.toString('base64');
+            let resizedBase64 = `data:image/jpg;base64,${resizedImageData}`;
 
-    let req = https.request(options, function(res) {
-        res.on('data', function(data) {
-            console.log("Response:");
-            console.log(JSON.parse(data));
-            response.send(JSON.parse(data));
+            ///send to api
+            let message = {
+                'upload' : resizedBase64.toString(),
+                'mmc': true
+            };
+
+            let headers = {
+                "Authorization": "Token "+process.env.PLATERECOGNIZER,
+                'Content-Type': 'application/json',
+            };
+
+            let options = {
+                host: "api.platerecognizer.com",
+                port: 443,
+                path: "/v1/plate-reader",
+                method: "POST",
+                headers: headers
+            };
+
+            let req = https.request(options, function(res) {
+                res.on('data', function(data) {
+                    console.log("Response:");
+                    console.log(JSON.parse(data));
+                    response.send(JSON.parse(data));
+                });
+            });
+
+            req.on('error', function(e) {
+                console.log("ERROR:");
+                console.log(e);
+                response.status(400).send(e);
+            });
+
+            req.write(JSON.stringify(message));
+            req.end();
+
+        })
+        .catch(error => {
+            response.status(400).send(error);
         });
-    });
+});
 
-    req.on('error', function(e) {
-        console.log("ERROR:");
-        console.log(e);
-        response.send(e);
-    });
-
-    req.write(JSON.stringify(message));
-    req.end();
+app.post('/sendEmail', cors(corsConfig), (req, res) => {
+    const email = req.body.email;
+    const role = req.body.role;
+    const password = req.body.password;
+    const msg = {
+        to: email, // Change to your recipient
+        from: {
+            name: 'Prkcar',
+            email: 'noreply@prkcar.com',
+        },
+        subject: 'Prkcar Admin',
+        text: "You have added to the prkcar.com as "+role+" and please use following login credentials to log into your portal.\n\n" +
+            "Login URL: https://prkcar.com/admin\n\n" +
+            "Email: "+email+"\n\n" +
+            "Password: "+password+"\n\n" +
+            "Please keep above credentials private.\n\n" +
+            "Thank You\n" +
+            "Team Prkcar",
+    }
+    sgMail
+        .send(msg)
+        .then(() => {
+            console.log('Email sent to '+email);
+            res.send({status: 'successful'});
+        })
+        .catch((error) => {
+            console.error(error+' -> '+email);
+            res.send({status: 'failed', error: error});
+        });
 });
 
 app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });
+
+// app.post('/test', async (req, res) => {
+//
+//     // await fs.writeFile('image.jpg', base64Image, {encoding: 'base64'}, function (err) {
+//     //     console.log('File created');
+//     // });
+//
+//
+//
+//
+//
+//
+//     // let Kraken = require("kraken");
+//     //
+//     // let kraken = new Kraken({
+//     //     "api_key": "87c71272a927d615216d467a8ad0caea",
+//     //     "api_secret": "d0bd167b3d8e8fb532dc29d24b97cbb89466ebc1"
+//     // });
+//     //
+//     // let opts = {
+//     //     url: 'https://firebasestorage.googleapis.com/v0/b/prkcar-d3fa7.appspot.com/o/IMG_20210917_173423%5B1%5D.jpg?alt=media&token=101b911e-5a2e-41bc-829b-f7fe5e89fb03',
+//     //     lossy: true,
+//     //     wait: true,
+//     //     resize: {
+//     //         width: 768,
+//     //         height: 1024,
+//     //         strategy: 'portrait'
+//     //     }
+//     // };
+//     //
+//     // kraken.url(opts, function (err, data) {
+//     //     if (err) {
+//     //         console.log('Failed. Error message: %s', err);
+//     //     } else {
+//     //         console.log('Success. Optimized image URL: %s', data);
+//     //     }
+//     // });
+//
+//     res.send({'hello': 'sda'});
+// });
 
 // app.listen(3000, () => console.log('Server started'));
 

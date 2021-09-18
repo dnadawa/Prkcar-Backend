@@ -205,6 +205,27 @@ app.post('/sendEmail', cors(corsConfig), (req, res) => {
         });
 });
 
+app.get('/deleteUser/:email', cors(corsConfig), (req, res)=>{
+    const email = req.params.email;
+    admin.auth().getUserByEmail(email).then((userRecord) => {
+        const uid = userRecord.toJSON()['uid'];
+        console.log(uid);
+        //delete user
+
+        admin.auth().deleteUser(uid).then(() => {
+                console.log('Successfully deleted user');
+                res.send({'status': 'done'});
+            }).catch((error) => {
+                console.log('Error deleting user:', error);
+                res.status(400).send(error.toString());
+            });
+
+    }).catch((error) => {
+            console.log('Error fetching user data:', error);
+            res.status(400).send(error.toString());
+    });
+});
+
 app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });

@@ -125,6 +125,7 @@ app.post("/plateRecognize", cors(corsConfig), (request, response) => {
     let img = new Buffer(base64Image, 'base64');
 
     sharp(img)
+        .rotate()
         .resize({ height: 2048 })
         .toBuffer()
         .then(async resizedImageBuffer => {

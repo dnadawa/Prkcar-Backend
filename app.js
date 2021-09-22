@@ -70,7 +70,7 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
                 .date(current.getUTCDate())
                 .hour(current.getUTCHours())
                 .minute(current.getUTCMinutes())
-                .add(5, "minutes")
+                .add(24, "hours")
                 .format("yyyy/MM/DD HH:mm")
         );
         const id = req.body.id;
@@ -108,6 +108,51 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
                 }
             });
             console.log('CRON END');
+        });
+        res.send({status: 'successful'});
+    }
+    catch (e){
+        res.send( {status: 'failed'});
+    }
+
+});
+
+app.post("/expire", cors(corsConfig), (req, res) => {
+    try{
+        const current = new Date();
+        const time = new Date(
+            moment()
+                .year(current.getUTCFullYear())
+                .month(current.getMonth())
+                .date(current.getUTCDate())
+                .hour(current.getUTCHours())
+                .minute(current.getUTCMinutes())
+                .add(15, "minutes")
+                .format("yyyy/MM/DD HH:mm")
+        );
+        const id = req.body.id;
+
+        console.log(id);
+        console.log(current);
+
+        schedule.scheduleJob(time, function () {
+            console.log('CRON STARTED FOR EXPIRE');
+            const docRef = db.collection('parking').doc(id);
+            docRef.get().then(async doc => {
+                const isPending = doc.data().status === 'pending';
+                if (isPending) {
+                    console.log("PENDING");
+                    try {
+                        const res = await db.collection('parking').doc(id).delete();
+                        console.log(res);
+                    } catch (e) {
+                        console.log(e);
+                    }
+                } else {
+                    console.log("NOT PENDING");
+                }
+            });
+            console.log('CRON END FOR EXPIRE');
         });
         res.send({status: 'successful'});
     }
@@ -229,46 +274,6 @@ app.get('/deleteUser/:email', cors(corsConfig), (req, res)=>{
 app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });
-
-// app.post('/test', async (req, res) => {
-//
-//     // await fs.writeFile('image.jpg', base64Image, {encoding: 'base64'}, function (err) {
-//     //     console.log('File created');
-//     // });
-//
-//
-//
-//
-//
-//
-//     // let Kraken = require("kraken");
-//     //
-//     // let kraken = new Kraken({
-//     //     "api_key": "87c71272a927d615216d467a8ad0caea",
-//     //     "api_secret": "d0bd167b3d8e8fb532dc29d24b97cbb89466ebc1"
-//     // });
-//     //
-//     // let opts = {
-//     //     url: 'https://firebasestorage.googleapis.com/v0/b/prkcar-d3fa7.appspot.com/o/IMG_20210917_173423%5B1%5D.jpg?alt=media&token=101b911e-5a2e-41bc-829b-f7fe5e89fb03',
-//     //     lossy: true,
-//     //     wait: true,
-//     //     resize: {
-//     //         width: 768,
-//     //         height: 1024,
-//     //         strategy: 'portrait'
-//     //     }
-//     // };
-//     //
-//     // kraken.url(opts, function (err, data) {
-//     //     if (err) {
-//     //         console.log('Failed. Error message: %s', err);
-//     //     } else {
-//     //         console.log('Success. Optimized image URL: %s', data);
-//     //     }
-//     // });
-//
-//     res.send({'hello': 'sda'});
-// });
 
 // app.listen(3000, () => console.log('Server started'));
 

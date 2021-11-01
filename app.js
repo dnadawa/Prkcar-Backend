@@ -34,6 +34,35 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require('twilio')(accountSid, authToken);
 
+function deleteDoc(id, current){
+    const time = new Date(
+        moment()
+            .year(current.getUTCFullYear())
+            .month(current.getMonth())
+            .date(current.getUTCDate())
+            .hour(current.getUTCHours())
+            .minute(current.getUTCMinutes())
+            .add(5, "minutes")
+            .format("yyyy/MM/DD HH:mm")
+    );
+
+    console.log('Deletion entered');
+
+    schedule.scheduleJob(time, function () {
+        console.log('CRON STARTED for deleting');
+        const docRef = db.collection('parking').doc(id);
+        docRef.get().then(doc=>{
+            if(doc.exists){
+                const res = docRef.delete();
+                console.log("Deleted res: ", res);
+            }
+        });
+        console.log('CRON END');
+    });
+
+    console.log('Deletion scheduled');
+}
+
 app.post("/send", cors(corsConfig), (req, res) => {
     const phone = req.body.phone;
     const messageBody = req.body.message;
@@ -84,31 +113,37 @@ app.post("/sendSchedule", cors(corsConfig), (req, res) => {
             console.log('CRON STARTED');
             const docRef = db.collection('parking').doc(id);
             docRef.get().then(doc=>{
-                const isParked = doc.data().status==='parked';
-                if(isParked){
-                    console.log("PARKING");
-                    try{
-                        client.messages
-                            .create({
-                                body: 'Your allocated parking time will expire in 15 minutes.',
-                                from: '+15407798532',
-                                to: phone
-                            })
-                            .then((message) => {
-                                    console.log(message.sid);
-                                }
-                            );
+                if(doc.exists){
+                    const isParked = doc.data().status==='parked';
+                    if(isParked){
+                        console.log("PARKING");
+                        try{
+                            client.messages
+                                .create({
+                                    body: 'Your allocated parking time will expire in 15 minutes.',
+                                    from: '+15407798532',
+                                    to: phone
+                                })
+                                .then((message) => {
+                                        console.log(message.sid);
+                                    }
+                                );
+                        }
+                        catch (e) {
+                            console.log(e);
+                        }
                     }
-                    catch (e) {
-                        console.log(e);
+                    else{
+                        console.log("NOT PARKING");
                     }
-                }
-                else{
-                    console.log("NOT PARKING");
                 }
             });
             console.log('CRON END');
         });
+
+        ///delete document
+        deleteDoc(id, current);
+
         res.send({status: 'successful'});
     }
     catch (e){
@@ -139,17 +174,19 @@ app.post("/expire", cors(corsConfig), (req, res) => {
             console.log('CRON STARTED FOR EXPIRE');
             const docRef = db.collection('parking').doc(id);
             docRef.get().then(async doc => {
-                const isPending = doc.data().status === 'pending';
-                if (isPending) {
-                    console.log("PENDING");
-                    try {
-                        const res = await db.collection('parking').doc(id).delete();
-                        console.log(res);
-                    } catch (e) {
-                        console.log(e);
+                if(doc.exists){
+                    const isPending = doc.data().status === 'pending';
+                    if (isPending) {
+                        console.log("PENDING");
+                        try {
+                            const res = await db.collection('parking').doc(id).delete();
+                            console.log(res);
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    } else {
+                        console.log("NOT PENDING");
                     }
-                } else {
-                    console.log("NOT PENDING");
                 }
             });
             console.log('CRON END FOR EXPIRE');
@@ -275,19 +312,19 @@ app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });
 
-// app.listen(3000, () => console.log('Server started'));
+app.listen(3000, () => console.log('Server started'));
 
-const privateKey = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/privkey.pem', 'utf8');
-const certificate = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/cert.pem', 'utf8');
-const ca = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/chain.pem', 'utf8');
-
-const credentials = {
-    key: privateKey,
-    cert: certificate,
-    ca: ca
-};
-
-https.createServer(credentials, app)
-    .listen(5000, function () {
-        console.log('Server started on port 5000')
-    })
+// const privateKey = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/privkey.pem', 'utf8');
+// const certificate = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/cert.pem', 'utf8');
+// const ca = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/chain.pem', 'utf8');
+//
+// const credentials = {
+//     key: privateKey,
+//     cert: certificate,
+//     ca: ca
+// };
+//
+// https.createServer(credentials, app)
+//     .listen(5000, function () {
+//         console.log('Server started on port 5000')
+//     })

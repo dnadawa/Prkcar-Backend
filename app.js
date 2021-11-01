@@ -312,19 +312,19 @@ app.get('/', (req, res) => {
     res.send("<h1>Hello</h1>");
 });
 
-app.listen(3000, () => console.log('Server started'));
+// app.listen(3000, () => console.log('Server started'));
 
-// const privateKey = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/privkey.pem', 'utf8');
-// const certificate = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/cert.pem', 'utf8');
-// const ca = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/chain.pem', 'utf8');
-//
-// const credentials = {
-//     key: privateKey,
-//     cert: certificate,
-//     ca: ca
-// };
-//
-// https.createServer(credentials, app)
-//     .listen(5000, function () {
-//         console.log('Server started on port 5000')
-//     })
+const privateKey = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/cert.pem', 'utf8');
+const ca = fs.readFileSync('/etc/letsencrypt/live/api.prkcar.com/chain.pem', 'utf8');
+
+const credentials = {
+    key: privateKey,
+    cert: certificate,
+    ca: ca
+};
+
+https.createServer(credentials, app)
+    .listen(5000, function () {
+        console.log('Server started on port 5000')
+    })

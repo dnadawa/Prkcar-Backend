@@ -42,7 +42,7 @@ function deleteDoc(id, current){
             .date(current.getUTCDate())
             .hour(current.getUTCHours())
             .minute(current.getUTCMinutes())
-            .add(5, "minutes")
+            .add(30, "days")
             .format("yyyy/MM/DD HH:mm")
     );
 
